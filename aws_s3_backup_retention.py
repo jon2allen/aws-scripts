@@ -14,7 +14,7 @@ def app_run():
     parser.add_argument('--days', help='days to retain ')
     parser.add_argument('--bucket', help='S3 bucket' )
     parser.add_argument('--backup_prefix', help="daily backup file prefix - used\'myback\' not \'myback*\'" )
-    parser.add_argument('--dry_run', action="store_true", help='dry-run for testin' )
+    parser.add_argument('--dry_run', action="store_true", help='dry-run for testing' )
     args = parser.parse_args()
     # special arg processing if necessary
     def check_args():  
@@ -54,11 +54,15 @@ def app_run():
             if o["LastModified"] < retention_period:
                 print( "older than ", days_specifed )
                 delete_candidate_list.append(o)
-                
-    print("deleeting older files")
+    print("***************Summary***************")
+    print("Num of objects found:  ", len(objects["Contents"]))            
+   
+    if ( len( delete_candidate_list) > 0 ):
+        print ( "Number of files to delete: " , len(delete_candidate_list))
+        print("deleting older files")
     
     for obj in delete_candidate_list:
-        print("Deleteing:  ", obj["Key"])
+        print("Deleting:  ", obj["Key"])
         if ( dry_run == False):
             s3.delete_object(Bucket = my_bucket, Key = obj["Key"])
     return  
