@@ -4,7 +4,7 @@
 #
 #  ec2_local_backup_retention.py --days 10 --dir /var/backup  --prefix db_bk.tgz
 #################################################################################
-import os, pytz
+import sys,os, pytz
 from datetime import datetime, timezone, timedelta
 import argparse
 
@@ -32,6 +32,9 @@ def app_run():
         return days_specifed, file_prefix, my_dir, dry_run
     #
     days_specifed, file_prefix, my_dir, dry_run = check_args()
+    if my_dir == None:
+        print("No dir specified - see -h for commands")
+        sys.exit(4)
     today = datetime.now(timezone.utc)
     retention_period = today - timedelta(days = days_specifed )
      
