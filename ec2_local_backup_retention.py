@@ -1,34 +1,12 @@
 #################################################################################
-#  S3 backup daily retenttion job
-#  removes backups older than day specified. 
+#  EC2 server backup daily retenttion job
+#  removes backups older than day specified in local cache
 #
-#  aws_s3_backup_retention --days 10 --bucket testbucket  --prefix db_back.tgz
+#  ec2_local_backup_retention.py --days 10 --dir /var/backup  --prefix db_bk.tgz
 #################################################################################
-import boto3
 import os, pytz
 from datetime import datetime, timezone, timedelta
-import pprint
 import argparse
-
-from botocore.exceptions import ServiceNotInRegionError
-
-class objRetention:
-    def __init__(self, service, period, location, prefix):
-        self.service = service
-        self.period = period
-        self.location = location
-        self.prefix = prefix
-        self.period_interval = "d"
-        self.obj_list = []
-        self.delete_list = []
-    def list_obs(self):
-        pass
-    def delete_candidate(self):
-        pass
-    def process_deletes(self):
-        pass
-      
-    
 
 def app_run():
     parser = argparse.ArgumentParser(description='EC2 local Backup retention')
