@@ -35,48 +35,78 @@ def app_run():
     if my_dir == None:
         print("No dir specified - see -h for commands")
         sys.exit(4)
+        
     today = datetime.now(timezone.utc)
-    retention_period = today - timedelta(days = days_specifed )
-     
+    retention_period = today - timedelta(days = days_specifed ) 
     
+    # main_entry_point
+    process_ec2_dir(days_specifed, file_prefix, my_dir, dry_run, today, retention_period) 
+    
+    return
 
-    print("today's date is ", today)
-    print("Start of retention period (days) ", retention_period )
-    print("EC2 server dir:  ", my_dir)
-    print("backup prefix", file_prefix )
-
+def process_ec2_dir(days_specifed, file_prefix, my_dir, dry_run, today, retention_period):
+    
+    def print_parms(file_prefix, my_dir, today, retention_period):
+        print("today's date is ", today)
+        print("Start of retention period (days) ", retention_period )
+        print("EC2 server dir:  ", my_dir)
+        print("backup prefix", file_prefix )
+        return
+    
+    def delete_files(dry_run, delete_candidate_list):
+        for obj in delete_candidate_list:
+            print("Deleting:  ", obj )
+            if ( dry_run == False):
+                os.remove(obj)
+        return
+    
+    def deletion_summary(delete_candidate_list):
+        if ( len( delete_candidate_list) > 0 ):
+            print ( "Number of files to delete: " , len(delete_candidate_list))
+            print("deleting older files")
+        return
+    
+    def get_dir(my_dir):
+        objects = os.listdir(my_dir) 
+        os.chdir(my_dir)
+        return objects   
+    
+    def get_file_timestamp(utc, o):
+        o_time = datetime.fromtimestamp(os.stat(o).st_ctime)
+        o_time = utc.localize(o_time)
+        return o_time 
+    
+    def filter_dir_obj(days_specifed, file_prefix, my_dir, retention_period, filter_lists):
+        found_candidate_list = filter_lists[0]
+        delete_candidate_list = filter_lists[1]
+        objects = get_dir(my_dir)    
+        utc=pytz.UTC
+        for o in objects:
+            o_time = get_file_timestamp(utc, o)
+            # print("file: ", o, "time: ", o_time ) 
+            if o.startswith(file_prefix):
+                print("file: ", o, "time: ", o_time )
+                found_candidate_list.append(o)
+                if o_time < retention_period:
+                    print("older than ", days_specifed )
+                    delete_candidate_list.append(o)
+        return
+    
+    def list_summary(found_candidate_list):
+        print("***************Summary***************")
+        print("Num of objects found:  ", len(found_candidate_list))
+        return
+        
     delete_candidate_list = []
     found_candidate_list = []
-
-    objects = os.listdir(my_dir)
-    
-    os.chdir(my_dir)
-    utc=pytz.UTC
-    
-    for o in objects:
-        o_time = datetime.fromtimestamp(os.stat(o).st_ctime)
-        #o_time = time.ctime(os.stat(o).st_ctime)
-        o_time = utc.localize(o_time)
-        # print("file: ", o, "time: ", o_time ) 
-        if o.startswith(file_prefix):
-            print("file: ", o, "time: ", o_time )
-            found_candidate_list.append(o)
-            if o_time < retention_period:
-                print("older than ", days_specifed )
-                delete_candidate_list.append(o)  
-    
-    print("***************Summary***************")
-    print("Num of objects found:  ", len(found_candidate_list))            
-                  
-    if ( len( delete_candidate_list) > 0 ):
-        print ( "Number of files to delete: " , len(delete_candidate_list))
-        print("deleting older files")      
-
-    for obj in delete_candidate_list:
-        print("Deleting:  ", obj )
-        if ( dry_run == False):
-            os.remove(obj)
-    return  
+    filter_lists = [delete_candidate_list, found_candidate_list]
+    # main processing loop ec2 files        
+    print_parms(file_prefix, my_dir, today, retention_period)
+    filter_dir_obj(days_specifed, file_prefix, my_dir, retention_period, filter_lists)  
+    list_summary(found_candidate_list)                       
+    deletion_summary(delete_candidate_list)      
+    delete_files(dry_run, delete_candidate_list)
+    return 
 
 if __name__ == "__main__":
    app_run()
