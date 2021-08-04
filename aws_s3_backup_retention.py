@@ -1,6 +1,6 @@
 #################################################################################
 #  S3 backup daily retenttion job
-#  removes backups older than day specified. 
+#  removes backups older than day specified.
 #
 #  aws_s3_backup_retention --days 10 --bucket testbucket  --prefix db_back.tgz
 #################################################################################
@@ -9,72 +9,85 @@ from datetime import datetime, timezone, timedelta
 import pprint
 import argparse
 
+
 def app_run():
     parser = argparse.ArgumentParser(description='S3 Backup retention')
     parser.add_argument('--days', help='days to retain ')
-    parser.add_argument('--bucket', help='S3 bucket' )
-    parser.add_argument('--backup_prefix', help="daily backup file prefix - used\'myback\' not \'myback*\'" )
-    parser.add_argument('--dry_run', action="store_true", help='dry-run for testing' )
+    parser.add_argument('--bucket', help='S3 bucket')
+    parser.add_argument(
+        '--backup_prefix', help="daily backup file prefix - used\'myback\' not \'myback*\'")
+    parser.add_argument('--dry_run', action="store_true",
+                        help='dry-run for testing')
     args = parser.parse_args()
     # special arg processing if necessary
-    def check_args():  
+
+    def check_args():
         days_specifed = None
         file_prefix = ""
-        my_bucket = ""   
+        my_bucket = ""
         dry_run = False
         if (args.dry_run):
             dry_run = True
-        if ( args.days):
+        if (args.days):
             days_specifed = int(args.days)
         else:
             days_specifed = 10
         file_prefix = args.backup_prefix
-        my_bucket = args.bucket    
+        my_bucket = args.bucket
         return days_specifed, file_prefix, my_bucket, dry_run
     #
     days_specifed, file_prefix, my_bucket, dry_run = check_args()
     today = datetime.now(timezone.utc)
-    retention_period = today - timedelta(days = days_specifed )
-     
-    
+    retention_period = today - timedelta(days=days_specifed)
 
-    print("today's date is ", today)
-    print("Start of retention period (days) ", retention_period )
-    print("S3 bucket:  ", my_bucket)
-    print("backup prefix", file_prefix )
+    del_list, found_list = process_s3_bucket(days_specifed, file_prefix, my_bucket,
+                      dry_run, today, retention_period)
+    return
+
+
+def process_s3_bucket(days_specifed, file_prefix, my_bucket, dry_run, today, retention_period):
+    def s3_summary(file_prefix, my_bucket, today, retention_period):
+        print("today's date is ", today)
+        print("Start of retention period (days) ", retention_period)
+        print("S3 bucket:  ", my_bucket)
+        print("backup prefix", file_prefix)
+
+    def s3_get_objects(s3, days_specifed, file_prefix, my_bucket, retention_period, delete_candidate_list):
+        s3 = boto3.client('s3')
+        list_found = []
+        objects = s3.list_objects_v2(Bucket=my_bucket, Prefix=file_prefix)
+
+        for o in objects["Contents"]:
+            print(o["Key"], " ", o["LastModified"], " size: ", o["Size"])
+            list_found.append(o["Key"])
+            if o["LastModified"] < retention_period:
+                print("older than ", days_specifed)
+                delete_candidate_list.append(o["Key"])
+        print("***************Summary***************")
+        print("Num of objects found:  ", len(objects["Contents"]))
+        return list_found
+    
+    def delete_summary(delete_candidate_list):
+        if (len(delete_candidate_list) > 0):
+            print("Number of files to delete: ", len(delete_candidate_list))
+            print("deleting older files")
+    def process_deletes(my_bucket, dry_run, delete_candidate_list, s3):
+        for obj in delete_candidate_list:
+            print("Deleting:  ", obj)
+            if (dry_run == False):
+                s3.delete_object(Bucket=my_bucket, Key=obj)
+    
 
     delete_candidate_list = []
-
+    found_candidate_list = []
     s3 = boto3.client('s3')
+    s3_summary(file_prefix, my_bucket, today, retention_period)
+    found_candidate_list = s3_get_objects(s3, days_specifed, file_prefix, my_bucket,
+                        retention_period, delete_candidate_list)
+    delete_summary(delete_candidate_list) 
+    process_deletes(my_bucket, dry_run, delete_candidate_list, s3)
+    return delete_candidate_list, found_candidate_list
 
-    objects = s3.list_objects_v2(Bucket=my_bucket, Prefix = file_prefix )
-
-    for o in objects["Contents"]:
-            print(o["Key"], " ", o["LastModified"] , " size: ", o["Size"])
-            if o["LastModified"] < retention_period:
-                print( "older than ", days_specifed )
-                delete_candidate_list.append(o)
-    print("***************Summary***************")
-    print("Num of objects found:  ", len(objects["Contents"]))            
-   
-    if ( len( delete_candidate_list) > 0 ):
-        print ( "Number of files to delete: " , len(delete_candidate_list))
-        print("deleting older files")
-    
-    for obj in delete_candidate_list:
-        print("Deleting:  ", obj["Key"])
-        if ( dry_run == False):
-            s3.delete_object(Bucket = my_bucket, Key = obj["Key"])
-    return  
-
-    
-    
 
 if __name__ == "__main__":
-   app_run()
-
-        
-
-        
-       
-     
+    app_run()
