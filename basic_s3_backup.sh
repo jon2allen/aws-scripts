@@ -4,6 +4,13 @@
 #
 # example usuage - 
 # /var/www/html/weather_obs/noaa_back.sh 'ANZ535*.txt' '/var/www/html'  ndugutime ANZ535.tgz
+# 4 parms
+# $1 = glob filter for find
+# $2 = directory to do the glob in 
+# $3 = S3 bucket
+# $4 = prefix of file - it is automatically appended with time "now"
+#    ANZ535.tgz.2021_08_01-03.00.01  ( Y/M/D/)
+
 
 _local_dir="bkup"
 _glob="$1"
