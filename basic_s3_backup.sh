@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # set local backup dir
+# this is direcotry on the server where the tar.gz is stored before transit to S3
 #
 # example usuage - 
 # /var/www/html/weather_obs/noaa_back.sh 'ANZ535*.txt' '/var/www/html'  ndugutime ANZ535.tgz
@@ -26,6 +27,20 @@ _now=$(date "+%Y_%m_%d-%H.%M.%S")
 
 echo "backup is  now at $_now..."
 
+if ! [[ $4 =~ ^[0-9a-zA-Z._-]+$ ]]; then
+    # Checks whether valid characters exist
+    echo "bad file name";
+    exit
+fi
+
+if ! [[ $2 =~ ^[0-9a-zA-Z._-\/\ ]+$ ]]; then
+    # Checks whether valid characters exist
+    echo "supicious path";
+    exit
+fi
+
+
+
 _file="$4.$_now"
 
 echo "file:  $_file"
@@ -42,8 +57,6 @@ echo $_find_cmd
 
 _aws_cmd="aws s3 cp /$_local_dir/$_file s3://$_bucket/$_file"
 
-
-#$aws s3 cp /bkup/$_file  s3://ndugutime/$_file
 
 eval $_find_cmd
 
