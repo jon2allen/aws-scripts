@@ -1,3 +1,4 @@
+#!/usr/bin/python
 #################################################################################
 #  EC2 server backup daily retenttion job
 #  removes backups older than day specified in local cache
