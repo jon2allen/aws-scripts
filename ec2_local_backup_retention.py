@@ -86,8 +86,8 @@ def process_ec2_dir(days_specifed, file_prefix, my_dir, dry_run, today, retentio
         return o_time
 
     def filter_dir_obj(days_specifed, file_prefix, my_dir, retention_period, filter_lists):
-        found_candidate_list = filter_lists[0]
-        delete_candidate_list = filter_lists[1]
+        found_candidate_list = filter_lists[1]
+        delete_candidate_list = filter_lists[0]
         objects = get_dir(my_dir)
         utc = pytz.UTC
         for o in objects:
