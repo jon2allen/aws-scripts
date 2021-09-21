@@ -8,50 +8,6 @@ from pathlib import Path
 import shutil
 import argparse
 
-
-def last_3chars(x):
-    file_l = x.split(".")
-    try:
-        ret = int(file_l.pop())
-    except:
-        print(" Invalid generation file:",  x)
-        sys.exit(8)
-    return ret
-
-
-def get_list_of_files(dir, glob_filter):
-    glob_path = Path(dir)
-    file_list = [str(pp) for pp in glob_path.glob(str(glob_filter))]
-    final_l = []
-    for f in file_list:
-        final_l.append(os.path.split(f)[1])
-    final_l.sort(key = last_3chars)
-    return final_l
-
-def parse_gen_number( f_base, in_file):
-    l = len(f_base)
-    str_start = in_file[l:]
-    print("str_start: ", str_start)
-    str_start = str_start[1:]
-    print('2nd ', str_start)
-    try:
-        gen_num = int(str_start[0:3])
-    except:
-        gen_num = -1
-    return gen_num
-
-def incr_rename_generation( myfile, i ):
-    i = i + 1
-    file_l = myfile.split(".")
-    file_l.pop()
-    file_l.append(str(i))
-    print(file_l)
-    new_file = file_l.pop(0)
-    print("new_file:", new_file)
-    while file_l:
-        new_file = new_file + "." + file_l.pop(0)
-    print("final new:", new_file)
-    return new_file
     
 
 class StdioRotate:
@@ -87,12 +43,12 @@ class StdioRotate:
              shutil.copy(self.file_out_base, new_file)
         else:
             last_file = gen.pop()
-            gen_num = parse_gen_number( self.file_out_base, last_file)
+            gen_num = self.parse_gen_number( self.file_out_base, last_file)
             if  gen_num == self.generations:
                 os.remove(last_file)
                 gen.append(last_file)
             if  gen_num < self.generations:
-                incr_file = incr_rename_generation( last_file, gen_num)
+                incr_file = self.incr_rename_generation( last_file, gen_num)
                 gen.append(last_file)
                 gen.append(incr_file)
             while gen:
@@ -114,7 +70,7 @@ class StdioRotate:
         return self.file_out_base + ".*"
     def list_generations(self):
         glob_f = self._create_glob()
-        generation_list = get_list_of_files(".", glob_f)
+        generation_list = self.get_list_of_files(".", glob_f)
         return generation_list
     def run(self):
         self._parse_args()
@@ -131,6 +87,49 @@ class StdioRotate:
                 # print(input_)
                 f.write(input_)
         return
+    def last_3chars(self, x):
+        file_l = x.split(".")
+        try:
+            ret = int(file_l.pop())
+        except:
+            print(" Invalid generation file:",  x)
+            sys.exit(8)
+        return ret
+
+    def get_list_of_files(self, dir, glob_filter):
+        glob_path = Path(dir)
+        file_list = [str(pp) for pp in glob_path.glob(str(glob_filter))]
+        final_l = []
+        for f in file_list:
+            final_l.append(os.path.split(f)[1])
+        final_l.sort(key = self.last_3chars)
+        return final_l
+
+    def parse_gen_number( self, f_base, in_file):
+        l = len(f_base)
+        str_start = in_file[l:]
+        print("str_start: ", str_start)
+        str_start = str_start[1:]
+        print('2nd ', str_start)
+        try:
+            gen_num = int(str_start[0:3])
+        except:
+            gen_num = -1
+        return gen_num
+
+    def incr_rename_generation(self, myfile, i ):
+        i = i + 1
+        file_l = myfile.split(".")
+        file_l.pop()
+        file_l.append(str(i))
+        print(file_l)
+        new_file = file_l.pop(0)
+        print("new_file:", new_file)
+        while file_l:
+            new_file = new_file + "." + file_l.pop(0)
+        print("final new:", new_file)
+        return new_file
+    
     
 if __name__ == "__main__":
     sr = StdioRotate()
