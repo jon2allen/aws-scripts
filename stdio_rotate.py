@@ -7,6 +7,8 @@ import glob
 from pathlib import Path
 import shutil
 import argparse
+import datetime
+import socket
 
     
 
@@ -16,11 +18,13 @@ class StdioRotate:
         self.log_pattern = ""
         self.file_out_base = ""
         self.file_out_first_genartion = ""
+        self.header = False
     def _parse_args(self):
         self.parser = argparse.ArgumentParser(description='stdio rotation')
         self.parser.add_argument('--generations', help='number of outputs to keep ')
         self.parser.add_argument('--file', help='output prefix ')
-        self.parser.add_argument('--date', help='Pre-append time to output')
+        self.parser.add_argument('--header', action="store_true",
+                                 help='Pre-append time/header to output')
         args = self.parser.parse_args()
         if args.generations:
             try:
@@ -32,6 +36,8 @@ class StdioRotate:
         else:
             print("No output file specified  -- exiting")
             sys.exit(8)    
+        if args.header:
+            self.header = True
     # special arg processing if nec
     def rotate_generations(self):
         print("here1")
@@ -76,9 +82,29 @@ class StdioRotate:
         self._parse_args()
         self._write_file()
         self.rotate_generations()
+    def _write_header(self, f):
+        if self.header == False:
+            return
+        t_begin = datetime.datetime.now()
+        time_string = t_begin.strftime("%A, %d. %B %Y %I:%M%p")
+        f.write("*" * 80 + "\n")
+        f.write("*\n")
+        f.write("* datetime: ")
+        f.write(" " +  time_string + "\n")
+        f.write("* system:   ")
+        f.write(" " +  sys.platform + "\n")
+        f.write("* host:     ")
+        f.write(" " + socket.gethostname() + "\n") 
+        f.write("* user:     ")
+        f.write(" " +  os.getlogin() + "\n")
+        f.write("*" + "\n")
+        f.write("*" * 80 + "\n")
+        return
+        
     def _write_file(self):
         print("write_file")
         with open(self.file_out_base, mode = "w") as f:
+            self._write_header(f)
             while True:
                 input_ = sys.stdin.readline()
                 if input_ == '':
@@ -134,3 +160,4 @@ class StdioRotate:
 if __name__ == "__main__":
     sr = StdioRotate()
     sr.run()
+   
