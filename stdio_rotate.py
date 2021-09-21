@@ -19,12 +19,15 @@ class StdioRotate:
         self.file_out_base = ""
         self.file_out_first_genartion = ""
         self.header = False
+        self.debug = False
     def _parse_args(self):
         self.parser = argparse.ArgumentParser(description='stdio rotation')
         self.parser.add_argument('--generations', help='number of outputs to keep ')
         self.parser.add_argument('--file', help='output prefix ')
         self.parser.add_argument('--header', action="store_true",
                                  help='Pre-append time/header to output')
+        self.parser.add_argument('--debug', action="store_true",
+                                 help='debug trace')
         args = self.parser.parse_args()
         if args.generations:
             try:
@@ -38,14 +41,16 @@ class StdioRotate:
             sys.exit(8)    
         if args.header:
             self.header = True
+        if args.debug:
+            self.debug = True
     # special arg processing if nec
     def rotate_generations(self):
-        print("here1")
+        self._debug_print("rotate generaation")
         gen = self.list_generations()
         if len(gen)  == 0:
-             print("h2.1")
+             self._debug_print("sr--01 - zero case")
              new_file = self.file_out_base + ".1"
-             print("new_file 1", new_file)
+             self._debug_print("new_file 1", new_file)
              shutil.copy(self.file_out_base, new_file)
         else:
             last_file = gen.pop()
@@ -61,13 +66,13 @@ class StdioRotate:
                 if len(gen) > 1:
                     new_file = gen.pop()
                     last_file = gen.pop()
-                    print("last_file(1):", last_file, new_file  )
+                    self._debug_print("copy files (1):", last_file, new_file  )
                     shutil.copy( last_file, new_file)
                     gen.append( last_file)
                 else:
                     last_file = self.file_out_base
                     new_file = gen.pop()
-                    print("last_file:", last_file, new_file  )
+                    self._debug_print("copy file last_file:", last_file, new_file  )
                     shutil.copy( last_file, new_file)
                 #last_file = new_file
             new_file = self.file_out_base + ".1"
@@ -102,15 +107,15 @@ class StdioRotate:
         return
         
     def _write_file(self):
-        print("write_file")
+        self._debug_print("write_file")
         with open(self.file_out_base, mode = "w") as f:
             self._write_header(f)
             while True:
                 input_ = sys.stdin.readline()
                 if input_ == '':
-                    print("exit")
+                    #self._debug_print"exit")
                     break
-                # print(input_)
+                # self._debug_printinput_)
                 f.write(input_)
         return
     def last_3chars(self, x):
@@ -134,9 +139,9 @@ class StdioRotate:
     def parse_gen_number( self, f_base, in_file):
         l = len(f_base)
         str_start = in_file[l:]
-        print("str_start: ", str_start)
+        self._debug_print("str_start: ", str_start)
         str_start = str_start[1:]
-        print('2nd ', str_start)
+        self._debug_print('2nd ', str_start)
         try:
             gen_num = int(str_start[0:3])
         except:
@@ -148,13 +153,16 @@ class StdioRotate:
         file_l = myfile.split(".")
         file_l.pop()
         file_l.append(str(i))
-        print(file_l)
+        # self._debug_printfile_l)
         new_file = file_l.pop(0)
-        print("new_file:", new_file)
+        self._debug_print("incr rename last file:", new_file)
         while file_l:
             new_file = new_file + "." + file_l.pop(0)
-        print("final new:", new_file)
+        self._debug_print("incre rename final new:", new_file)
         return new_file
+    def _debug_print( self, s, *optional_strings):
+        if self.debug == True:
+            print( "stdio_rotate.py debug -- " + s + ''.join(optional_strings))
     
     
 if __name__ == "__main__":
