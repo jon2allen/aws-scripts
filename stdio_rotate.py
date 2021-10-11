@@ -128,14 +128,19 @@ class StdioRotate:
         return ret
 
     def get_list_of_files(self, dir, glob_filter):
+        curr_dir = os.path.split(glob_filter)[0]
+        self._debug_print( "dir:", dir )
+        self._debug_print( "glob_filter", glob_filter )
+        self._debug_print( "glob_path: ", curr_dir )
+        if len(curr_dir) > 2:
+            os.chdir(os.path.split(glob_filter)[0] )
         glob_path = Path(dir)
-        file_list = [str(pp) for pp in glob_path.glob(str(glob_filter))]
+        file_list = [str(pp) for pp in glob_path.glob(str(os.path.split(glob_filter)[1]))]
         final_l = []
         for f in file_list:
             final_l.append(os.path.split(f)[1])
         final_l.sort(key = self.last_3chars)
         return final_l
-
     def parse_gen_number( self, f_base, in_file):
         l = len(f_base)
         str_start = in_file[l:]
