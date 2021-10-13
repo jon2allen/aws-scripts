@@ -17,6 +17,7 @@ class StdioRotate:
         self.generations = 10
         self.log_pattern = ""
         self.file_out_base = ""
+        self.file_out_base_dir = ""
         self.file_out_first_genartion = ""
         self.header = False
         self.debug = False
@@ -36,6 +37,7 @@ class StdioRotate:
                 print("setting to 10 - invalid generations value")
         if args.file:
             self.file_out_base = args.file
+            self.file_out_base_dir = os.path.split(args.file)[0]
         else:
             print("No output file specified  -- exiting")
             sys.exit(8)    
@@ -44,17 +46,25 @@ class StdioRotate:
         if args.debug:
             self.debug = True
     # special arg processing if nec
+    def _set_path( self, file ):
+        if self.file_out_base_dir.startswith(os.sep):
+           self._debug_print("directory")
+           file = self.file_out_base_dir + os.sep + file
+        return( file ) 
     def rotate_generations(self):
         self._debug_print("rotate generaation")
         gen = self.list_generations()
+        self._debug_print(str(gen))
         if len(gen)  == 0:
              self._debug_print("sr--01 - zero case")
              new_file = self.file_out_base + ".1"
              self._debug_print("new_file 1", new_file)
-             shutil.copy(self.file_out_base, new_file)
+             shutil.copy2(self.file_out_base, new_file)
         else:
             last_file = gen.pop()
+            self._debug_print("gen - last file: ", last_file )
             gen_num = self.parse_gen_number( self.file_out_base, last_file)
+            self._debug_print("gen_num: ", str(gen_num))
             if  gen_num == self.generations:
                 os.remove(last_file)
                 gen.append(last_file)
@@ -62,21 +72,26 @@ class StdioRotate:
                 incr_file = self.incr_rename_generation( last_file, gen_num)
                 gen.append(last_file)
                 gen.append(incr_file)
+                self._debug_print("incr_file", incr_file )
             while gen:
+                self._debug_print(str(gen))
                 if len(gen) > 1:
                     new_file = gen.pop()
                     last_file = gen.pop()
-                    self._debug_print("copy files (1):", last_file, new_file  )
-                    shutil.copy( last_file, new_file)
-                    gen.append( last_file)
+                    new_file = self._set_path( new_file )
+                    last_file = self._set_path( last_file )
+                    self._debug_print("copy files (1):", last_file, " -> ", new_file  )
+                    shutil.copy2( last_file, new_file)
+                    gen.append( os.path.split(last_file)[1])
                 else:
                     last_file = self.file_out_base
-                    new_file = gen.pop()
-                    self._debug_print("copy file last_file:", last_file, new_file  )
-                    shutil.copy( last_file, new_file)
+                    last_pop_file = gen.pop()
+                    last_pop_file = self._set_path( last_pop_file )
+                    self._debug_print("copy file last_file:(2)", last_file," -> ", last_pop_file  )
+                    shutil.copy2( last_file, last_pop_file)
                 #last_file = new_file
             new_file = self.file_out_base + ".1"
-            shutil.copy(self.file_out_base, new_file)
+            shutil.copy2(self.file_out_base, new_file)
     def _create_glob(self):
         return self.file_out_base + ".*"
     def list_generations(self):
@@ -128,15 +143,26 @@ class StdioRotate:
         return ret
 
     def get_list_of_files(self, dir, glob_filter):
+        curr_dir = os.path.split(glob_filter)[0]
+        self._debug_print( "dir:", dir )
+        self._debug_print( "glob_filter", glob_filter )
+        self._debug_print( "glob_path: ", curr_dir )
+        if len(curr_dir) > 2:
+            os.chdir(os.path.split(glob_filter)[0] )
         glob_path = Path(dir)
-        file_list = [str(pp) for pp in glob_path.glob(str(glob_filter))]
+        file_list = [str(pp) for pp in glob_path.glob(str(os.path.split(glob_filter)[1]))]
         final_l = []
         for f in file_list:
             final_l.append(os.path.split(f)[1])
+            #final_l.append(f)
         final_l.sort(key = self.last_3chars)
         return final_l
 
     def parse_gen_number( self, f_base, in_file):
+        self._debug_print("f_base:", f_base )
+        f_base = os.path.split(f_base)[1]
+        self._debug_print("in_file: ", in_file)
+        self._debug_print("f_base: after split - ", f_base )
         l = len(f_base)
         str_start = in_file[l:]
         self._debug_print("str_start: ", str_start)
