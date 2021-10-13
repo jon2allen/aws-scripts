@@ -157,7 +157,6 @@ class StdioRotate:
             #final_l.append(f)
         final_l.sort(key = self.last_3chars)
         return final_l
-
     def parse_gen_number( self, f_base, in_file):
         self._debug_print("f_base:", f_base )
         f_base = os.path.split(f_base)[1]
