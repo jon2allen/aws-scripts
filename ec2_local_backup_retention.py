@@ -89,7 +89,7 @@ def process_ec2_dir(days_specifed, file_prefix, suffix, my_dir, dry_run, today, 
         return objects
 
     def get_file_timestamp(utc, o):
-        o_time = datetime.fromtimestamp(os.stat(o).st_ctime)
+        o_time = datetime.fromtimestamp(os.stat(o).st_mtime)
         o_time = utc.localize(o_time)
         return o_time
 
