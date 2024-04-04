@@ -115,6 +115,25 @@ def process_ec2_dir(days_specifed, file_prefix, suffix, my_dir, dry_run, today, 
         print("Num of objects found:  ", len(found_candidate_list))
         return
 
+    def fail_safe( found_canditate_list ):
+       if len(found_candidate_list) < 2:
+           print("only one backup exist - fail safe")
+           return False
+       else:
+           return True 
+
+    def fail_safe2( found_canditate_list, delete_candidate_list ):
+       my_del_list = delete_candidate_list
+       if len(found_candidate_list) == len(delete_candidate_list):
+           my_del_list = delete_candidate_list[1:]
+           print("************************************************* ")
+           print("failsafe2 - delete list and candidate are the same")
+           print("removing oldest from delete list                  ")
+           print("************************************************* ")
+           print(" ")
+       return my_del_list
+
+
     delete_candidate_list = []
     found_candidate_list = []
     filter_lists = [delete_candidate_list, found_candidate_list]
@@ -123,6 +142,9 @@ def process_ec2_dir(days_specifed, file_prefix, suffix, my_dir, dry_run, today, 
     filter_dir_obj(days_specifed, file_prefix, suffix, my_dir,
                    retention_period, filter_lists)
     list_summary(found_candidate_list)
+    if fail_safe( found_candidate_list ) == False:
+       return
+    delete_candidate_list = fail_safe2( found_candidate_list, delete_candidate_list )
     deletion_summary(delete_candidate_list)
     delete_files(dry_run, delete_candidate_list)
     return
