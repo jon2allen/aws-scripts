@@ -93,6 +93,18 @@ def process_ec2_dir(days_specifed, file_prefix, suffix, my_dir, dry_run, today, 
         o_time = utc.localize(o_time)
         return o_time
 
+    def get_file_size(o):
+        try:
+            # Get the file size in bytes
+            file_size = os.path.getsize(o)
+            return file_size
+        except FileNotFoundError:
+            print( f"File '{o}' not found." )
+            return -1
+        except Exception as e:
+            print( f"An error occurred: {str(e)}")
+            return -1
+
     def filter_dir_obj(days_specifed, file_prefix, suffix, my_dir, retention_period, filter_lists):
         found_candidate_list = filter_lists[1]
         delete_candidate_list = filter_lists[0]
@@ -100,6 +112,7 @@ def process_ec2_dir(days_specifed, file_prefix, suffix, my_dir, dry_run, today, 
         utc = pytz.UTC
         for o in objects:
             o_time = get_file_timestamp(utc, o)
+            o_size = get_file_size(o)
             # print("file: ", o, "time: ", o_time )
             if o.startswith(file_prefix) or (o.endswith(suffix)):
                 
@@ -107,7 +120,7 @@ def process_ec2_dir(days_specifed, file_prefix, suffix, my_dir, dry_run, today, 
                 if o_time < retention_period:
                     print("older than " , days_specifed, " ", end='')
                     delete_candidate_list.append(o)
-                print("file: ", o, "time: ", o_time)
+                print("file: ", o, "time: ", o_time, " size: ", o_size)
         return
 
     def list_summary(found_candidate_list):
